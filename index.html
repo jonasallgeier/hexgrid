@@ -1,0 +1,25 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+   <meta charset="UTF-8">
+   <title>HexGrid</title>
+  </head>
+  <body style="display:flex; margin: 0; padding: 0;">
+    <div style="position: absolute; top: 20px; width:100%">
+      <div style="height:auto;width:40%;margin:0 auto; padding: 10px; background-color:#ffffff; text-align: center;">
+        <select name="pattern" id="selectpattern" onchange="drawHexgrid()" onfocus="this.selectedIndex=-1;">
+          <option value="random">random</option>
+          <option value="triangles">triangles</option>
+          <option value="pseudorandom">pseudo-random</option>
+        </select>
+        <input type="checkbox" id="showhex" name="hexbox" value="yes" onclick="drawHexgrid()">
+        <label for="hexbox">show hexagons</label><br>
+      </div>
+    </div>
+    
+    <canvas id="canvas" width="1000" height="800" style="margin: 0; padding: 0;" />
+    
+    <script src="lib-functions.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>
