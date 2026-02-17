@@ -43,13 +43,22 @@ window.addEventListener("resize", () => {
   }, 50);
 });
 
+function hex_size() {
+  const L = canvas.width;
+  const H = canvas.height;
+
+  var hexsize = parseFloat(document.getElementById("sizeslider").value);
+  const R = 0.05*Math.min(L,H)*2**hexsize;
+  return R  
+}
+
 function drawHexgrid(reset) {
   const L = canvas.width;
   const H = canvas.height;
 
   ctx.clearRect(0, 0, L, H);
 
-  const R = 30.0;
+  const R = hex_size();
   const size = Point(R, R);
   const origin = Point(-0.25 * R + L/2, -0.25 * R+H/2);
 
@@ -63,14 +72,13 @@ function drawHexgrid(reset) {
   dY = hex_distance(TL, BL);
   dX = hex_distance(BL, BR);
 
-  console.log(dY)
   const left = Math.floor(-0.5*dX-1);
   const right = Math.ceil(0.5*dX + 1);
   const top = Math.floor(-0.5*dY-1);
   const bottom = Math.ceil(0.5*dY + 1);
   var keepPattern = true
   if (!persistent_hexes || reset) {
-    console.log("Creating initial Hexes");
+    console.log("redoing all hexes");
     var myHexes = [];
     for (var r = top; r <= bottom; r++) {
       // pointy top
@@ -84,7 +92,7 @@ function drawHexgrid(reset) {
   }
 
   for (i in persistent_hexes) {
-    drawHexagon(myLayout, persistent_hexes[i], R,keepPattern);
+    drawHexagon(myLayout, persistent_hexes[i], keepPattern);
   }
 
   //register EventListener
@@ -96,10 +104,9 @@ function drawHexgrid(reset) {
       for (var i in persistent_hexes) {
         temp = persistent_hexes[i]
         if (temp.q == Math.round(hex.q) && temp.r == Math.round(hex.r)) {
-          console.log("rotating")
           temp.rotate();
           persistent_hexes[i] = temp
-          drawHexagon(myLayout, temp, R, true);
+          drawHexagon(myLayout, temp, true);
         }
       }
     },
@@ -311,6 +318,9 @@ function mySerpin(hex) {
   var parity = mod(hex.r,2)
   var col = hex.q + (hex.r-parity)/2
 
+  // TODO: turn iters into while loop; maybe find a closedform solution? copilot suggests the following for calc
+  //  =1 + INT(LOG(A1 - BITAND(A1, A1-1), 2)) <-- allegedly solves Josephus problem and provides elimination round
+
   // ITER 1
   if (mod(hex.r,2) == 0) {
     if (mod(hex.q,2) == 0 ) {
@@ -391,9 +401,9 @@ function mySerpin(hex) {
 }
 
 
-function drawHexagon(layout, hex, R, keepPattern) {
+function drawHexagon(layout, hex, keepPattern) {
   pattern = document.getElementById("selectpattern").value;
-
+  const R = hex_size()
   if (!keepPattern) {
     switch (pattern) {
       case "triangles":
