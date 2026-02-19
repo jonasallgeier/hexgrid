@@ -209,112 +209,6 @@ function mySnake(hex) {
 function mySerpin(hex) {
   var cs = 3;
 
-  // if (hex.q == hex.s+1) {
-  //   cs = 3
-  //   return cs
-  // }
-  // if (hex.s == hex.r) {
-  //   cs = 2
-  //   return cs
-  // }
-  // if (hex.r == hex.q-1) {
-  //   cs = 1
-  //   return cs
-  // }
-
-  // if ((hex.q == hex.s+2) || (hex.q == hex.s) ) {
-  //   cs = (1-mod(hex.q,2))+1
-  //   return cs
-  // }
-
-  // if ((hex.s == hex.r-1)|| (hex.s == hex.r+1)) {
-  //   if (mod(hex.r,2) == 1 ) {
-  //     cs = 3
-  //   } else {
-  //     cs = 1
-  //   }
-  //   return cs
-  // }
-  // if ((hex.r == hex.q-2)|| (hex.r == hex.q)) {
-  //   if (mod(hex.q,2) == 1 ) {
-  //     cs = 3
-  //   } else {
-  //     cs = 2
-  //   }
-  //   return cs
-  // }
-
-
-  // var r = hex.r
-  // var q = hex.q
-  // var s = hex.s
-
-  // var iter = 1
-
-  // // JOSEPHUS problem
-  // while (iter < 10)  {
-  //   if (mod(r + 1,2*iter) == 0) {
-  //     if (mod(q,2*iter) == 0 ) {
-  //       cs = 2
-  //     } else {
-  //       cs = 1
-  //     }
-  //     return cs
-  //   }
-
-  //   if (mod(s,2*iter) == 0) {
-  //     cs = 3
-  //     return cs
-  //   }
-
-  //   iter = iter +1
-  // }
-
-  // // ITER 1
-  // if (mod(hex.r,2) == 0) {
-  //   if (mod(hex.q,2) == 0 ) {
-  //     cs = 2
-  //   } else {
-  //     cs = 1
-  //   }
-  //   return cs
-  // }
-
-  // if (mod(hex.s,2) == 0) {
-  //   cs = 3
-  //   return cs
-  // }
-
-  // // ITER 2
-  // if (mod(hex.r+1,4) == 0) {
-  //   if (mod(hex.q,4) == 0 ) {
-  //     cs = 1
-  //   } else {
-  //     cs = 2
-  //   }
-  //   return cs
-  // }
-
-  // if (mod(hex.s+1,4) == 0) {
-  //   cs = 3
-  //   return cs
-  // }
-
-  // // ITER 3
-  // if (mod(hex.r+7,8) == 0) {
-  //   cs = 4
-  //   if (mod(hex.q+2,8) == 0 ) {
-  //     cs = 2
-  //   } else {
-  //     cs = 1
-  //   }
-  //   return cs
-  // }
-  // if (mod(hex.s+7,8) == 0) {
-  //   cs = 3
-  //   return cs
-  // }
-
   var parity = mod(hex.r,2)
   var col = hex.q + (hex.r-parity)/2
 
@@ -371,37 +265,13 @@ function mySerpin(hex) {
     return cs
   }
 
-  // if (mod(hex.s,2) == 0) {
-  //   cs = 3
-  //   return cs
-  // }
-
-  // if (mod(hex.s+1,4) == 0) {
-  //   cs = 3
-  //   return cs
-  // }
-
-  // if (mod(hex.s+3,8) == 0) {
-  //   cs = 3
-  //   return cs
-  // }
-
-  // if (mod(hex.s+7,16) == 0) {
-  //   cs = 3
-  //   return cs
-  // }
-
-  // if (mod(hex.s+15,32) == 0) {
-  //   cs = 3
-  //   return cs
-  // }
-
-
   return cs;
 }
 
 
 function drawHexagon(layout, hex, keepPattern) {
+  ctx.save();
+
   pattern = document.getElementById("selectpattern").value;
   const R = hex_size()
   if (!keepPattern) {
@@ -414,6 +284,13 @@ function drawHexagon(layout, hex, keepPattern) {
         break;
       case "tinytrias":
         hex.orientation = mod(hex.r+ mod(hex.q,3)*2,3)+1
+        break
+      case "single":
+        if ((hex.r==0) && (hex.q==0)) {
+          hex.orientation = 3
+        } else {
+          hex.orientation = 0
+        }
         break
       case "serpin":
         hex.orientation = mySerpin(hex);
@@ -428,19 +305,38 @@ function drawHexagon(layout, hex, keepPattern) {
         hex.orientation = myPseudorandom(hex);
         break;
     }
-  } 
+  }
+  // draw no hex
   if (hex.orientation.toString() == "0") {
+    ctx.restore()
     return
   }
 
   const corners = polygon_corners(layout, hex);
   var center = hex_to_pixel(layout, hex);
 
+  switch (hex.orientation.toString()) {
+    case "1":
+      alpha = 120
+      break;
+    case "2":
+      alpha = 240
+      break;
+    case "3":
+      alpha = 0
+      break;
+  }
+
+  ctx.translate(center.x,center.y)
+  ctx.rotate(alpha * Math.PI / 180);
+  ctx.lineWidth = 0.05*R;
+
+  // draw a highlighted hex without orientation
   if (hex.orientation.toString() == "4") {
     ctx.beginPath();
 
-    for (const corner in corners) {
-      ctx.lineTo(corners[corner].x, corners[corner].y);
+    for (const corner of corners) {
+      ctx.lineTo(corner.x-center.x, corner.y-center.y);
     }
     ctx.closePath();
     ctx.fillStyle = "red"
@@ -449,118 +345,61 @@ function drawHexagon(layout, hex, keepPattern) {
     return
   }
 
-  var checkBox = document.getElementById("showhex");
-  if (checkBox.checked == true) {
-    ctx.beginPath();
-    // ctx.lineWidth = 5;
-    for (const corner in corners) {
-      ctx.lineTo(corners[corner].x, corners[corner].y);
-    }
-    ctx.closePath();
-    ctx.fillStyle = "white"
-    ctx.fill()
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = "black";
-    ctx.stroke();
-    ctx.lineWidth = 1.25;
-  } else {
-    ctx.lineWidth = 1;
-  }
-
+  // draw the white hex
   ctx.beginPath();
-  for (const corner in corners) {
-    ctx.lineTo(corners[corner].x, corners[corner].y);
+  for (const corner of corners) {
+    ctx.lineTo(corner.x-center.x, corner.y-center.y);
   }
   ctx.closePath();
   ctx.fillStyle = "white"
   ctx.fill()
 
-
-
-  switch (hex.orientation.toString()) {
-    case "1":
-      i1 = 0;
-      i2 = 4;
-      i3 = 5;
-      i4 = 1;
-      i5 = 2;
-      i6 = 3;
-      alpha = (150 / 360) * 2 * Math.PI;
-      break;
-    case "2":
-      i1 = 4;
-      i2 = 2;
-      i3 = 3;
-      i4 = 5;
-      i5 = 0;
-      i6 = 1;
-      alpha = ((150 + 120) / 360) * 2 * Math.PI;
-      break;
-    case "3":
-      i1 = 2;
-      i2 = 0;
-      i3 = 1;
-      i4 = 3;
-      i5 = 4;
-      i6 = 5;
-      alpha = ((150 + 240) / 360) * 2 * Math.PI;
-      break;
-  }
-
+  var showborder = document.getElementById("showhex").checked;
   ctx.beginPath();
-  ctx.lineTo(
-    0.5 * corners[i4].x + 0.5 * corners[i5].x,
-    0.5 * corners[i4].y + 0.5 * corners[i5].y
+  ctx.lineTo(-0.5*Math.sqrt(3)*R,0);
+  ctx.lineTo(-0.5*Math.sqrt(3)*R,+0.5*R);
+  ctx.lineTo(-0.25*Math.sqrt(3)*R,+0.75*R);
+  ctx.arc(0,+R, R / 2,
+    (210 / 360) * 2 * Math.PI,
+    (330 / 360) * 2 * Math.PI,false
   );
-  ctx.lineTo(corners[i5].x, corners[i5].y);
-  ctx.arc(
-    corners[i6].x,
-    corners[i6].y,
-    R / 2,
-    alpha + (180 / 360) * 2 * Math.PI,
-    alpha + (300 / 360) * 2 * Math.PI
-  );
-  ctx.lineTo(corners[i2].x, corners[i2].y);
-  ctx.lineTo(
-    0.5 * corners[i2].x + 0.5 * corners[i3].x,
-    0.5 * corners[i2].y + 0.5 * corners[i3].y
-  );
-  // if (checkBox.checked == false) {
-    ctx.lineTo(
-      0.5 * corners[i4].x + 0.5 * corners[i5].x,
-      0.5 * corners[i4].y + 0.5 * corners[i5].y
-    );
-  // } 
+  ctx.lineTo(0.25*Math.sqrt(3)*R,+0.75*R);
+  ctx.lineTo(0.5*Math.sqrt(3)*R,+0.5*R);
+  ctx.lineTo(0.5*Math.sqrt(3)*R,0);
+  ctx.closePath()
 
   ctx.fillStyle = "orange";
   ctx.fill();
-  if (checkBox.checked == false) {
-    ctx.strokeStyle = "orange";
-    ctx.stroke();
-  } else {
-    ctx.strokeStyle = "black";
-    ctx.stroke();
-  }
+  ctx.strokeStyle = "orange";
+  ctx.stroke();
 
   ctx.beginPath();
-  ctx.moveTo(corners[i1].x, corners[i1].y);
-  ctx.arc(
-    corners[i1].x,
-    corners[i1].y,
-    R / 2,
-    alpha,
-    alpha + (120 / 360) * 2 * Math.PI
+  ctx.lineTo(0,-R);
+  ctx.arc(0,-R, R / 2,
+    (30 / 360) * 2 * Math.PI,
+    (150 / 360) * 2 * Math.PI,false
   );
+  ctx.closePath()
+
   ctx.fillStyle = "orange";
   ctx.fill();
-  if (checkBox.checked == false) {
-    ctx.strokeStyle = "orange";
-    ctx.stroke();
-  } else {
+  ctx.strokeStyle = "orange";
+  ctx.stroke();
+
+
+  if (showborder) {
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (const corner of corners) {
+      ctx.lineTo(corner.x-center.x, corner.y-center.y);
+    }
+    ctx.closePath();
+    ctx.lineWidth = 0.1*R;
     ctx.strokeStyle = "black";
     ctx.stroke();
   }
-
+  ctx.restore()
 }
 
 setInterval(() => {
@@ -573,5 +412,5 @@ setInterval(() => {
     }
   drawHexgrid(false)
   }
-}, 1000);
+}, 50000);
 

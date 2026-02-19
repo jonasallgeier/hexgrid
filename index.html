@@ -8,13 +8,14 @@
     <div style="position: absolute; top: 20px; width:100%">
       <div style="height:auto;width:40%;margin:0 auto; padding: 10px; background-color:transparent; text-align: center;">
         <select title="mode-selection" name="pattern" id="selectpattern" onchange="drawHexgrid(true)" onfocus="this.selectedIndex=-1;">
-          <option value="random">random</option>
-          <option value="triangles">triangles</option>
-          <option value="tripat">tripat</option>
-          <option value="serpin">serpin</option>
-          <option value="snake">snake</option>
-          <option value="tinytrias">tiny triangles</option>
-          <option value="pseudorandom">pseudo-random</option>
+          <option value="single">Canvas</option>
+          <option value="random">Random</option>
+          <option value="triangles">Triple Triangles</option>
+          <option value="tripat">Double Triangles</option>
+          <option value="tinytrias">Single Triangles</option>
+          <option value="serpin">Sierpiński</option>
+          <option value="snake">Snakes</option>
+          <option value="pseudorandom">Pseudo-random</option>
         </select>
         <input type="checkbox" id="showhex" name="hexbox" value="yes" onclick="drawHexgrid(false)" label="show hexagons" title="show hexagons">
         <label for="hexbox">show hexagons</label><br>
