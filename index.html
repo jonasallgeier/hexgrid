@@ -1,31 +1,189 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-   <meta charset="UTF-8">
-   <title>HexGrid</title>
-  </head>
-  <body style="display:flex; margin: 0; padding: 0;">
-    <div style="position: absolute; top: 20px; width:100%">
-      <div style="height:auto;width:40%;margin:0 auto; padding: 10px; background-color:transparent; text-align: center;">
-        <select title="mode-selection" name="pattern" id="selectpattern" onchange="drawHexgrid(true)" onfocus="this.selectedIndex=-1;">
-          <option value="single">Canvas</option>
-          <option value="random">Random</option>
-          <option value="triangles">Triple Triangles</option>
-          <option value="tripat">Double Triangles</option>
-          <option value="tinytrias">Single Triangles</option>
-          <option value="serpin">Sierpiński</option>
-          <option value="snake">Snakes</option>
-          <option value="pseudorandom">Pseudo-random</option>
-        </select>
-        <input type="checkbox" id="showhex" name="hexbox" value="yes" onclick="drawHexgrid(false)" label="show hexagons" title="show hexagons">
-        <label for="hexbox">show hexagons</label><br>
-        <input type="range" min="-2" max="1" value="0", step="0.1" id="sizeslider" oninput="drawHexgrid(true)" >
-      </div>
-    </div>
-    
-    <canvas id="canvas" width="1000" height="800" style="margin: 0; padding: 0;" />
-    
-    <script src="lib-functions.js"></script>
-    <script src="main.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hexgrid</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+    }
+
+    /* Fullscreen canvas */
+    #bgCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      z-index: -1;
+    }
+
+    header {
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+      background: rgba(0, 0, 0, 0.3);
+      /*backdrop-filter: blur(4px);*/
+    }
+
+    .brand {
+      font-weight: 600;
+    }
+
+    /* Burger toggle */
+    #menu-toggle {
+      display: none;
+    }
+
+    .burger {
+      width: 28px;
+      height: 22px;
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .burger span {
+      height: 3px;
+      background: white;
+      border-radius: 3px;
+      transition: 0.25s;
+    }
+
+    nav {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      color: white;
+    }
+
+    nav form {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    nav label {
+      font-size: 0.8rem;
+    }
+
+    nav select,
+    nav input[type="range"],
+    nav input[type="checkbox"] {
+      accent-color: #0f284f;
+    }
+
+    nav select {
+      background: rgba(0, 0, 0, 0.4);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 4px;
+      padding: 0.25rem 0.5rem;
+    }
+
+    /* Responsive menu */
+    @media (max-width: 720px) {
+      .burger {
+        display: flex;
+      }
+
+      nav {
+        position: absolute;
+        top: 56px;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        background: rgba(0, 0, 0, 0.85);
+        padding: 1rem;
+        transform: translateY(-120%);
+        opacity: 0;
+        pointer-events: none;
+        transition: 0.25s;
+      }
+
+      nav form {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      #menu-toggle:checked ~ nav {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      /* Burger animation */
+      #menu-toggle:checked + label .line1 {
+        transform: translateY(9px) rotate(45deg);
+      }
+      #menu-toggle:checked + label .line2 {
+        opacity: 0;
+      }
+      #menu-toggle:checked + label .line3 {
+        transform: translateY(-9px) rotate(-45deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="bgCanvas"></canvas>
+
+  <header>
+    <div class="brand">Hexgrid</div>
+
+    <input type="checkbox" id="menu-toggle" />
+    <label class="burger" for="menu-toggle">
+      <span class="line1"></span>
+      <span class="line2"></span>
+      <span class="line3"></span>
+    </label>
+
+    <nav>
+      <form>
+        <div>
+          <label for="sizeslider">Size</label><br />
+          <input type="range" min="-2" max="1" value="0", step="0.1" id="sizeslider" oninput="drawHexgrid(true)" >
+        </div>
+
+        <div>
+          <label for="selectpattern">Pattern</label><br />
+          <select title="mode-selection" name="pattern" id="selectpattern" onchange="drawHexgrid(true)" onfocus="this.selectedIndex=-1;">
+            <option value="random">Random</option>
+            <option value="triatriple">Triple Triangles</option>
+            <option value="triadouble">Double Triangles</option>
+            <option value="triasingle">Single Triangles</option>
+            <option value="sierpinski">Sierpiński</option>
+            <option value="waves">Waves</option>
+            <option value="pseudorandom">Pseudo-random</option>
+            <option value="single">Canvas</option>
+          </select>
+        </div>
+
+        <div>
+          <label>
+            <input type="checkbox" id="showhex" name="hexbox" value="yes" onclick="drawHexgrid(false)" label="show hexagons" title="show hexagons">
+            <label for="hexbox">show hexagons</label><br>
+          </label>
+        </div>
+      </form>
+    </nav>
+  </header>
+
+  <script src="lib-functions.js"></script>
+  <script src="main.js"></script>
+</body>
 </html>

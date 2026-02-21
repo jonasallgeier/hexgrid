@@ -1,11 +1,9 @@
-const canvas = document.getElementById("canvas");
+const canvas = document.getElementById("bgCanvas");
 const ctx = canvas.getContext("2d");
 
 persistent_hexes = undefined;
 myLayout = undefined;
-dX = 0
-dY = 0
-
+let cameraOffset = { x: 0.0*window.innerWidth, y: 0.0*window.innerHeight }
 
 //Wrapperclass for hex with Orientation
 class HexO {
@@ -29,71 +27,6 @@ function init() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   drawHexgrid(true);
-}
-init();
-let resizeTimeout;
-window.addEventListener("resize", () => {
-  // Clear any previous pending timeout
-  clearTimeout(resizeTimeout);
-  // Set a new one
-  resizeTimeout = setTimeout(() => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    drawHexgrid(true);
-  }, 50);
-});
-
-function hex_size() {
-  const L = canvas.width;
-  const H = canvas.height;
-
-  var hexsize = parseFloat(document.getElementById("sizeslider").value);
-  const R = 0.05*Math.min(L,H)*2**hexsize;
-  return R  
-}
-
-function drawHexgrid(reset) {
-  const L = canvas.width;
-  const H = canvas.height;
-
-  ctx.clearRect(0, 0, L, H);
-
-  const R = hex_size();
-  const size = Point(R, R);
-  const origin = Point(-0.25 * R + L/2, -0.25 * R+H/2);
-
-  myLayout = Layout(layout_pointy, size, origin);
-
-  // collect corner coordinates
-  TL = pixel_to_hex(myLayout, Point(0, 0));
-  BR = pixel_to_hex(myLayout, Point(L, H));
-  BL = pixel_to_hex(myLayout, Point(0, H));
-
-  dY = hex_distance(TL, BL);
-  dX = hex_distance(BL, BR);
-
-  const left = Math.floor(-0.5*dX-1);
-  const right = Math.ceil(0.5*dX + 1);
-  const top = Math.floor(-0.5*dY-1);
-  const bottom = Math.ceil(0.5*dY + 1);
-  var keepPattern = true
-  if (!persistent_hexes || reset) {
-    console.log("redoing all hexes");
-    var myHexes = [];
-    for (var r = top; r <= bottom; r++) {
-      // pointy top
-      const r_offset = Math.floor(r / 2.0); // or r>>1
-      for (var q = left - r_offset; q <= right - r_offset; q++) {
-        myHexes.push(new HexO(q, r, -q - r, 1));
-      }
-    }
-    persistent_hexes = myHexes;
-    keepPattern = false
-  }
-
-  for (i in persistent_hexes) {
-    drawHexagon(myLayout, persistent_hexes[i], keepPattern);
-  }
 
   //register EventListener
   canvas.addEventListener(
@@ -114,11 +47,80 @@ function drawHexgrid(reset) {
   );
 }
 
+init();
+let resizeTimeout;
+window.addEventListener("resize", () => {
+  // Clear any previous pending timeout
+  clearTimeout(resizeTimeout);
+  // Set a new one
+  resizeTimeout = setTimeout(() => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    drawHexgrid(true);
+  }, 50);
+});
+
+function hex_size() {
+  const L = canvas.width;
+  const H = canvas.height;
+
+  var hexsize = parseFloat(document.getElementById("sizeslider").value);
+  return 0.05*Math.min(L,H)*2**hexsize
+}
+
+function drawHexgrid(reset) {
+  const L = canvas.width;
+  const H = canvas.height;
+
+  ctx.clearRect(0, 0, L, H);
+
+  const R = hex_size();
+  const size = Point(R, R);
+  let pattern = document.getElementById("selectpattern").value
+  let origin = Point(0,0)
+  if (pattern=='sierpinski') {
+    origin = Point(-1.5*Math.sqrt(3)* R + L/2+cameraOffset.x, -1.5 * R+H/2+cameraOffset.y);
+  } else {
+    origin = Point(-0.25 * R + L/2+cameraOffset.x, -0.25 * R+H/2+cameraOffset.y);
+  }
+
+  myLayout = Layout(layout_pointy, size, origin);
+
+  // collect corner coordinates
+  TL = pixel_to_hex(myLayout, Point(0, 0));
+  BR = pixel_to_hex(myLayout, Point(L, H));
+  BL = pixel_to_hex(myLayout, Point(0, H));
+  TR = pixel_to_hex(myLayout, Point(L, 0));
+
+  const left = Math.floor(BL.q);
+  const right = Math.ceil(TR.q);
+  const top = Math.floor(TL.r);
+  const bottom = Math.ceil(BL.r);
+  var keepPattern = true
+  if (!persistent_hexes || reset) {
+    // console.log("redoing all hexes");
+    var myHexes = [];
+    for (var r = top; r <= bottom; r++) {
+      // pointy top
+      const r_offset = Math.floor(r / 2.0); // or r>>1
+      for (var q = left - r_offset; q <= right - r_offset; q++) {
+        myHexes.push(new HexO(q, r, -q - r, 1));
+      }
+    }
+    persistent_hexes = myHexes;
+    keepPattern = false
+  }
+
+  for (i in persistent_hexes) {
+    drawHexagon(myLayout, persistent_hexes[i], keepPattern);
+  }
+}
+
 function mod(n, m) {
   return ((n % m) + m) % m;
 }
 
-function myPseudorandom(hex) {
+function pattern_pseudo(hex) {
   var x = hex.q;
   var y = hex.r;
   x = x * 3266489917 + 374761393;
@@ -133,7 +135,7 @@ function myPseudorandom(hex) {
   return (x % 3) + 1;
 }
 
-function myTriangles(hex) {
+function pattern_triatriple(hex) {
   var cs = "3";
   if (mod(hex.r, 2) == 0) {
     if (mod(hex.r,4) == 0) {
@@ -163,7 +165,7 @@ function myTriangles(hex) {
   return cs;
 }
 
-function myTriPat(hex) {
+function pattern_triadouble(hex) {
   var cs = "1";
   var row = mod(hex.q,7)
   // cs = row+1
@@ -195,7 +197,7 @@ function myTriPat(hex) {
   return cs.toString();
 }
 
-function mySnake(hex) {
+function pattern_waves(hex) {
   var cs = 1;
   switch (mod(hex.r,2)) {
     case 0:
@@ -206,7 +208,7 @@ function mySnake(hex) {
   return cs;
 }
 
-function mySerpin(hex) {
+function pattern_sierpinski(hex) {
   var cs = 3;
 
   var parity = mod(hex.r,2)
@@ -268,7 +270,6 @@ function mySerpin(hex) {
   return cs;
 }
 
-
 function drawHexagon(layout, hex, keepPattern) {
   ctx.save();
 
@@ -276,13 +277,13 @@ function drawHexagon(layout, hex, keepPattern) {
   const R = hex_size()
   if (!keepPattern) {
     switch (pattern) {
-      case "triangles":
-        hex.orientation = myTriangles(hex);
+      case "triadouble":
+        hex.orientation = pattern_triadouble(hex);
         break;
-      case "tripat":
-        hex.orientation = myTriPat(hex);
+      case "triatriple":
+        hex.orientation = pattern_triatriple(hex);
         break;
-      case "tinytrias":
+      case "triasingle":
         hex.orientation = mod(hex.r+ mod(hex.q,3)*2,3)+1
         break
       case "single":
@@ -292,17 +293,17 @@ function drawHexagon(layout, hex, keepPattern) {
           hex.orientation = 0
         }
         break
-      case "serpin":
-        hex.orientation = mySerpin(hex);
+      case "sierpinski":
+        hex.orientation = pattern_sierpinski(hex);
         break;
-      case "snake":
-        hex.orientation = mySnake(hex);
+      case "waves":
+        hex.orientation = pattern_waves(hex);
         break;
       case "random":
         hex.orientation = Math.floor(Math.random() * 3 + 1);
         break;
       case "pseudorandom":
-        hex.orientation = myPseudorandom(hex);
+        hex.orientation = pattern_pseudo(hex);
         break;
     }
   }
